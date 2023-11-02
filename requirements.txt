@@ -1,2 +1,4 @@
 flask-restful
 flask-cors
+werkzeug==2.0.2 #we need to do in this version , as its mentoined in the documentation
+```
