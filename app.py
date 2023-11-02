@@ -1,8 +1,10 @@
 from flask import Flask
 from flask_restful import Api
 from routes import EventList, Event
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 BASE_URL = '/api'
 
@@ -16,3 +18,5 @@ def hello_world():
 
 if __name__ == '__main__':
             app.run(debug=True)
+
+            
