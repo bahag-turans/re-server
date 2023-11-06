@@ -49,3 +49,23 @@ class Repository():
         ps_cursor.close()
       return event
     
+    def event_delete(self, id):
+      conn = self.get_db()
+      if(conn):
+        ps_cursor = conn.cursor()
+        ps_cursor.execute("Delete from event where eventid = %s", (id,))
+        conn.commit()
+        deleted_rows = ps_cursor.rowcount
+        ps_cursor.close()
+      return deleted_rows
+    
+    def event_update(self, data):
+      conn = self.get_db()
+      if(conn):
+        ps_cursor = conn.cursor()
+        ps_cursor.execute("update event set title = %s, event_description=%s, loc=%s, dat=%s where eventid = %s", (data['title'],data['event_description'],data['loc'],data['dat'], data['eventid']))
+        conn.commit()
+        event = EventModel(data['title'],data['event_description'],data['loc'],data['dat'], data['eventid'])
+        ps_cursor.close()
+      return event
+    

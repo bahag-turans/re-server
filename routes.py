@@ -21,3 +21,12 @@ class Event(Resource):
         
     def get(self, event_id):
         return self.repo.event_get_by_id(int(event_id)).__dict__
+    
+    def delete(self, event_id):
+        return self.repo.event_delete(int(event_id))
+    
+    def put(self,event_id, req=request):
+        data = req.get_json()
+        print("data in server", data)
+        return self.repo.event_update(data).__dict__
+    
