@@ -41,11 +41,11 @@ class Repository():
       if(conn):
         print(conn)
         ps_cursor = conn.cursor()
-        ps_cursor.execute("Insert into event (title, event_description, loc, dat) values(%s, %s, %s, %s) returning eventid", (data['title'],data['description'],data['location'],data['date']))
+        ps_cursor.execute("Insert into event (title, event_description, loc, dat) values(%s, %s, %s, %s) returning eventid", (data['title'],data['event_description'],data['loc'],data['dat']))
         conn.commit()
         id = ps_cursor.fetchone()[0]
         ps_cursor.close()
-        event = EventModel(data['title'],data['description'],data['location'],data['date'], id)
+        event = EventModel(data['title'],data['event_description'],data['loc'],data['dat'], id)
         ps_cursor.close()
       return event
     
