@@ -54,7 +54,7 @@ class Repository:
                 (id,))
             event_record = ps_cursor.fetchone()
             event_model = EventModel(event_record[0], event_record[1], event_record[2], str(event_record[3]),
-                                     event_record[4])
+                                     event_record[4], event_record[5])
             ps_cursor.close()
         return event_model
 
