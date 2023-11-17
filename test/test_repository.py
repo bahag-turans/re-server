@@ -7,9 +7,9 @@ from psycopg2 import pool
 from repository import Repository
 from unittest.mock import MagicMock
 
-event1 = EventModel('test Sarper dinner', 'not happening', 'Mannheim',
+event1 = EventModel('Test Sarper dinner', 'not happening', 'Mannheim',
                     datetime(2023, 12, 28, 23, 55, 59), 1, "")
-event2 = EventModel('test Agile practice', 'happening', 'Berlin',
+event2 = EventModel('Test Agile practice', 'happening', 'Berlin',
                     datetime(2023, 12, 29, 11, 00, 00), 2, "")
 event3 = EventModel('old event', 'Old event happened in the past', 'Berlin',
                     datetime(2022, 12, 29, 11, 00, 00), 2, "")
