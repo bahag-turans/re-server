@@ -119,6 +119,7 @@ class Repository:
         response = requests.get(base_url, params=params)
         print(response)
         data = response.json()
+        lat_lng = {"lat": 0, "lng": 0}
         if (data['results']):
             lat_lng = data['results'][0]['geometry']['location']
         return lat_lng

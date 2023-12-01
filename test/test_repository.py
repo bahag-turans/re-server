@@ -8,16 +8,16 @@ from repository import Repository
 from unittest.mock import MagicMock
 
 event1 = EventModel('Test Dinner Event', 'Lorem Ipsum Dorem Lorem Ipsum Dorem', 'Mannheim',
-                    datetime(2023, 12, 28, 23, 55, 59), 1, "")
+                    datetime(2023, 12, 28, 23, 55, 59), 1, "", {"lat": 0, "lng": 0})
 event2 = EventModel('Test Agile practice', 'Lorem Ipsum Dorem Lorem Ipsum Dorem', 'Berlin',
-                    datetime(2023, 12, 29, 11, 00, 00), 2, "")
+                    datetime(2023, 12, 29, 11, 00, 00), 2, "", {"lat": 0, "lng": 0})
 event3 = EventModel('Test Old Event', 'Lorem Ipsum Dorem Lorem Ipsum Dorem', 'Berlin',
-                    datetime(2022, 12, 29, 11, 00, 00), 2, "")
+                    datetime(2022, 12, 29, 11, 00, 00), 2, "", {"lat": 0, "lng": 0})
 
 event_row = [
-    (event1.title, event1.event_description, event1.loc, event1.dat, event1.eventid, event1.image_url),
-    (event2.title, event2.event_description, event2.loc, event2.dat, event2.eventid, event2.image_url),
-    (event3.title, event3.event_description, event3.loc, event3.dat, event3.eventid, event3.image_url),
+    (event1.title, event1.event_description, event1.loc, event1.dat, event1.eventid, event1.image_url, event1.position),
+    (event2.title, event2.event_description, event2.loc, event2.dat, event2.eventid, event2.image_url, event2.position),
+    (event3.title, event3.event_description, event3.loc, event3.dat, event3.eventid, event3.image_url, event3.position),
 ]
 
 
@@ -61,17 +61,19 @@ class TestRepository:
                 'loc': 'Mannheim',
                 'dat': datetime(2023, 12, 29, 11, 00, 00),
                 'image_url': '',
+                'position': {"lat": 0, "lng": 0}
             }
             cursor_mock.execute.return_value = None
             repo = Repository()
             repo.event_add(event_data)
-            expected_query = """Insert into event (title, event_description, loc, dat, image_url) values(%s, %s, %s, %s, %s) returning eventid"""
+            expected_query = """Insert into event (title, event_description, loc, dat, image_url, position) values(%s, %s, %s, %s, %s, %s) returning eventid"""
             expected_params = (
                 event_data['title'],
                 event_data['event_description'],
                 event_data['loc'],
                 event_data['dat'],
                 event_data['image_url'],
+                event_data['position']
             )
             cursor_mock.execute.assert_called_once_with(expected_query, expected_params)
 
