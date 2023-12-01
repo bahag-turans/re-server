@@ -22,7 +22,7 @@ event_row = [
 
 
 class TestRepository:
-    def setup(self):
+    def setup_method(self):
         app = Flask(__name__)
         with app.app_context():
             p_mock = MagicMock(spec=psycopg2.pool.SimpleConnectionPool)
@@ -34,7 +34,7 @@ class TestRepository:
             return app, cursor_mock
 
     def test_events_get_all(self):
-        app, cursor_mock = self.setup()
+        app, cursor_mock = self.setup_method()
         with app.app_context():
             cursor_mock.fetchall.return_value = event_row
             repo = Repository()
@@ -44,7 +44,7 @@ class TestRepository:
             assert events[1].dat == str(event2.dat)
 
     def test_event_get_by_id(self):
-        app, cursor_mock = self.setup()
+        app, cursor_mock = self.setup_method()
         with app.app_context():
             cursor_mock.fetchone.return_value = event_row[1]
             repo = Repository()
@@ -53,7 +53,7 @@ class TestRepository:
             assert event.eventid == event2.eventid
 
     def test_event_add(self):
-        app, cursor_mock = self.setup()
+        app, cursor_mock = self.setup_method()
         with app.app_context():
             event_data = {
                 'title': 'New Event',
@@ -76,7 +76,7 @@ class TestRepository:
             cursor_mock.execute.assert_called_once_with(expected_query, expected_params)
 
     def test_event_delete(self):
-        app, cursor_mock = self.setup()
+        app, cursor_mock = self.setup_method()
         with app.app_context():
             cursor_mock.execute.return_value = None
             repo = Repository()
@@ -88,7 +88,7 @@ class TestRepository:
             cursor_mock.execute.assert_called_once_with(expected_query, expected_params)
 
     def test_event_update(self):
-        app, cursor_mock = self.setup()
+        app, cursor_mock = self.setup_method()
         with app.app_context():
             event_data = {
                 'title': 'Updated Event',
