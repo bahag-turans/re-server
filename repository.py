@@ -38,11 +38,13 @@ class Repository:
         conn = self.get_db()
         if conn:
             ps_cursor = conn.cursor()
-            ps_cursor.execute("select title, event_description, loc, dat, eventid, image_url, position from event order by title")
+            ps_cursor.execute(
+                "select title, event_description, loc, dat, eventid, image_url, position from event order by title")
             event_records = ps_cursor.fetchall()
             event_list = []
             for row in event_records:
-                event_list.append(EventModel(row[0], row[1], row[2], str(row[3]), row[4], row[5], row[6]))
+                event_list.append(EventModel(
+                    row[0], row[1], row[2], str(row[3]), row[4], row[5], row[6]))
             ps_cursor.close()
         print("EVENT LIST: ", event_list)
         return event_list
@@ -81,7 +83,8 @@ class Repository:
             conn.commit()
             id = ps_cursor.fetchone()[0]
             ps_cursor.close()
-            event = EventModel(data['title'], data['event_description'], data['loc'], data['dat'], id, data['image_url'], data['position'])
+            event = EventModel(data['title'], data['event_description'],
+                               data['loc'], data['dat'], id, data['image_url'], data['position'])
             ps_cursor.close()
         return event
 
@@ -102,23 +105,20 @@ class Repository:
             ps_cursor.execute("update event set title = %s, event_description=%s, loc=%s, dat=%s where eventid = %s",
                               (data['title'], data['event_description'], data['loc'], data['dat'], data['eventid']))
             conn.commit()
-            event = EventModel(data['title'], data['event_description'], data['loc'], data['dat'], data['eventid'])
+            event = EventModel(
+                data['title'], data['event_description'], data['loc'], data['dat'], data['eventid'])
             ps_cursor.close()
         return event
-    
-
 
     def geocode_location(self, location):
-      base_url = 'https://maps.googleapis.com/maps/api/geocode/json'
-      params = {
-          'address': location,
-          'key': os.environ.get('MAP_API_KEY')
-      }
-      response = requests.get(base_url, params=params)
-      print(response)
-      data = response.json()
-
-      lat_lng = data['results'][0]['geometry']['location']
-      print(lat_lng)
-      return lat_lng
-    
+        base_url = 'https://maps.googleapis.com/maps/api/geocode/json'
+        params = {
+            'address': location,
+            'key': os.environ.get('MAP_API_KEY')
+        }
+        response = requests.get(base_url, params=params)
+        print(response)
+        data = response.json()
+        if (data['results']):
+            lat_lng = data['results'][0]['geometry']['location']
+        return lat_lng
