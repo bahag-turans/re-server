@@ -48,6 +48,35 @@ class Repository:
             ps_cursor.close()
         print("EVENT LIST: ", event_list)
         return event_list
+    
+    def events_get_by_page(self, pageNumber):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "select title, event_description, loc, dat, eventid, image_url, position from event order by title")
+            page_size = 4
+            page_number = pageNumber
+            ps_cursor.scroll((page_number - 1) * page_size)
+            paginated_data = ps_cursor.fetchmany(page_size)
+            event_list = []
+            ps_cursor.execute("SELECT COUNT(*) FROM event")
+            # Fetch the total number of records
+            total_records = ps_cursor.fetchone()[0]
+
+            total_pages = (total_records + page_size - 1) // page_size
+
+            for row in paginated_data:
+                event_list.append(EventModel(
+                    row[0], row[1], row[2], str(row[3]), row[4], row[5], row[6]).__dict__)
+            ps_cursor.close()
+        print("paginated data", event_list)
+        response = {
+            "data": event_list,
+            "total_pages": total_pages,
+            "current_page": pageNumber
+        }
+        return response
 
     def event_get_by_id(self, id):
         conn = self.get_db()
@@ -71,7 +100,7 @@ class Repository:
                 image_url = upload_image_to_storage(data['image_url'])
                 data['image_url'] = image_url
             else:
-                data['image_url'] = "https://storage.googleapis.com/hub-roitraining01-poc-images/event-images/9a41a39a-92f9-4687-8e73-378630d78cb7.png"
+                data['image_url'] = "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Image_not_available.png/800px-Image_not_available.png?20210219185637"
 
             if data['loc']:
                 lat_lng = self.geocode_location(data['loc'])
@@ -123,3 +152,4 @@ class Repository:
         if (data['results']):
             lat_lng = data['results'][0]['geometry']['location']
         return lat_lng
+
