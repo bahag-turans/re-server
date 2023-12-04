@@ -2,7 +2,7 @@ import json
 import os
 from flask import current_app, g
 import requests
-from models import EventModel
+from models import EventModel, UserModel
 from google.cloud import storage
 from io import BytesIO
 import uuid
@@ -79,7 +79,8 @@ class Repository:
                 data['position'] = json_data
             ps_cursor.execute(
                 "Insert into event (title, event_description, loc, dat, image_url, position) values(%s, %s, %s, %s, %s, %s) returning eventid",
-                (data['title'], data['event_description'], data['loc'], data['dat'], data['image_url'], data['position']))
+                (data['title'], data['event_description'], data['loc'], data['dat'], data['image_url'],
+                 data['position']))
             conn.commit()
             id = ps_cursor.fetchone()[0]
             ps_cursor.close()
@@ -123,3 +124,55 @@ class Repository:
         if (data['results']):
             lat_lng = data['results'][0]['geometry']['location']
         return lat_lng
+
+    def user_get_by_id(self, id):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "select full_name, email, phone_number from users where userid = %s",
+                (id,))
+            user_record = ps_cursor.fetchone()
+            if user_record is None:
+                return None
+            user_model = UserModel(user_record[0], user_record[1], user_record[2], id)
+            ps_cursor.close()
+        return user_model
+
+    def user_get_by_email(self, email):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "select full_name, email, phone_number, userid from users where email = %s",
+                (email,))
+            user_record = ps_cursor.fetchone()
+            if user_record is None:
+                return None
+            user_model = UserModel(user_record[0], user_record[1], user_record[2], user_record[3])
+            ps_cursor.close()
+        return user_model
+
+    def user_add(self, data):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "Insert into users (full_name, email, phone_number) values(%s, %s, %s) returning userid",
+                (data['full_name'], data['email'], data['phone_number']))
+            conn.commit()
+            id = ps_cursor.fetchone()[0]
+            ps_cursor.close()
+            user = UserModel(data['full_name'], data['email'], data['phone_number'], id)
+            ps_cursor.close()
+        return user
+
+    def user_delete(self, id):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute("Delete from users where userid = %s", (id,))
+            conn.commit()
+            deleted_rows = ps_cursor.rowcount
+            ps_cursor.close()
+        return deleted_rows
