@@ -71,7 +71,7 @@ class Repository:
                 image_url = upload_image_to_storage(data['image_url'])
                 data['image_url'] = image_url
             else:
-                data['image_url'] = "https://storage.googleapis.com/hub-roitraining01-poc-images/event-images/9a41a39a-92f9-4687-8e73-378630d78cb7.png"
+                data['image_url'] = "https://storage.googleapis.com/hub-roitraining01-poc-images/event-images/no-image.jpeg"
 
             if data['loc']:
                 lat_lng = self.geocode_location(data['loc'])
