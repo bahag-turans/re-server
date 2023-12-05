@@ -48,6 +48,35 @@ class Repository:
             ps_cursor.close()
         print("EVENT LIST: ", event_list)
         return event_list
+    
+    def events_get_by_page(self, pageNumber):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "select title, event_description, loc, dat, eventid, image_url, position from event order by title")
+            page_size = 4
+            page_number = pageNumber
+            ps_cursor.scroll((page_number - 1) * page_size)
+            paginated_data = ps_cursor.fetchmany(page_size)
+            event_list = []
+            ps_cursor.execute("SELECT COUNT(*) FROM event")
+            # Fetch the total number of records
+            total_records = ps_cursor.fetchone()[0]
+
+            total_pages = (total_records + page_size - 1) // page_size
+
+            for row in paginated_data:
+                event_list.append(EventModel(
+                    row[0], row[1], row[2], str(row[3]), row[4], row[5], row[6]).__dict__)
+            ps_cursor.close()
+        print("paginated data", event_list)
+        response = {
+            "data": event_list,
+            "total_pages": total_pages,
+            "current_page": pageNumber
+        }
+        return response
 
     def event_get_by_id(self, id):
         conn = self.get_db()

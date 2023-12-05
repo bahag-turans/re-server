@@ -15,6 +15,13 @@ class EventList(Resource):
     def post(self, req=request):
         data = req.get_json()
         return self.repo.event_add(data).__dict__
+    
+class PaginatedEventList(Resource):
+    def __init__(self, repo=repository):
+        self.repo = repo
+
+    def get(self, page_number=1):
+        return self.repo.events_get_by_page(int(page_number))
 
 
 class Event(Resource):
