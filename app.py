@@ -1,7 +1,7 @@
 import os
 from flask import Flask, g
 from flask_restful import Api
-from routes import EventList, Event, Users, PaginatedEventList
+from routes import EventList, Event, Users, PaginatedEventList, Comment, EventComments
 from flask_cors import CORS
 from psycopg2 import pool
 
@@ -31,6 +31,8 @@ api.add_resource(EventList, f'{BASE_URL}/events')
 api.add_resource(Event, f'{BASE_URL}/event/<event_id>')
 api.add_resource(Users, f'{BASE_URL}/users', f'{BASE_URL}/users/<userid>')
 api.add_resource(PaginatedEventList, f'{BASE_URL}/events/<page_number>')
+api.add_resource(Comment, f'{BASE_URL}/comment', f'{BASE_URL}/comment/<commentid>')
+api.add_resource(EventComments, f'{BASE_URL}/event/<eventid>/comments')
 
 
 @app.route('/')

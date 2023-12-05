@@ -15,7 +15,8 @@ class EventList(Resource):
     def post(self, req=request):
         data = req.get_json()
         return self.repo.event_add(data).__dict__
-    
+
+
 class PaginatedEventList(Resource):
     def __init__(self, repo=repository):
         self.repo = repo
@@ -57,3 +58,30 @@ class Users(Resource):
 
     def delete(self, userid):
         return self.repo.user_delete(int(userid))
+
+
+class Comment(Resource):
+    def __init__(self, repo=repository):
+        self.repo = repo
+
+    def get(self, commentid):
+        comment_model = self.repo.comment_get_by_id(commentid)
+        if comment_model is not None:
+            return comment_model.__dict__
+        else:
+            return {"error": f"No user found with commentid {commentid}"}
+
+    def post(self, req=request):
+        data = req.get_json()
+        return self.repo.comment_add(data).__dict__
+
+    def delete(self, commentid):
+        return self.repo.comment_delete(int(commentid))
+
+
+class EventComments(Resource):
+    def __init__(self, repo=repository):
+        self.repo = repo
+
+    def get(self, eventid):
+        return [comment.__dict__ for comment in self.repo.get_comments_of_event(int(eventid)) if comment is not None]

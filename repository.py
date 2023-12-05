@@ -2,7 +2,7 @@ import json
 import os
 from flask import current_app, g
 import requests
-from models import EventModel, UserModel
+from models import EventModel, UserModel, CommentModel
 from google.cloud import storage
 from io import BytesIO
 import uuid
@@ -201,6 +201,65 @@ class Repository:
         if conn:
             ps_cursor = conn.cursor()
             ps_cursor.execute("Delete from users where userid = %s", (id,))
+            conn.commit()
+            deleted_rows = ps_cursor.rowcount
+            ps_cursor.close()
+        return deleted_rows
+
+    def comment_add(self, data):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "Insert into comment (author_name, comment, dat, authorid, eventid) values(%s, %s, %s, %s, %s) returning commentid",
+                (data['author_name'], data['comment'], data['dat'], data['authorid'], data['eventid']))
+            conn.commit()
+            id = ps_cursor.fetchone()[0]
+            ps_cursor.close()
+            comment = CommentModel(data['author_name'], data['comment'], data['dat'], data['authorid'],
+                                   data['eventid'], id)
+            ps_cursor.close()
+        return comment
+
+    def get_comments_of_event(self, eventid):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "select author_name, comment, dat, authorid, eventid, commentid from comment where eventid = %s",
+                (eventid,))
+            comment_records = ps_cursor.fetchall()
+            comment_list = []
+            if comment_records is None:
+                return None
+            for comment_record in comment_records:
+                comment_list.append(
+                    CommentModel(comment_record[0], comment_record[1], str(comment_record[2]), comment_record[3],
+                                 eventid, comment_record[5]))
+            ps_cursor.close()
+            print("Comment list for eventid: ", eventid, " is: ", comment_list)
+        return comment_list
+
+    def comment_get_by_id(self, commentid):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "select author_name, comment, dat, authorid, eventid, commentid from comments where commentid = %s",
+                (commentid,))
+            comment_record = ps_cursor.fetchone()
+            if comment_record is None:
+                return None
+            comment_model = CommentModel(comment_record[0], comment_record[1], str(comment_record[2]), comment_record[3],
+                                         comment_record[4], commentid)
+            ps_cursor.close()
+        return comment_model
+
+    def comment_delete(self, commentid):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute("Delete from comment where commentid = %s", (commentid,))
             conn.commit()
             deleted_rows = ps_cursor.rowcount
             ps_cursor.close()
