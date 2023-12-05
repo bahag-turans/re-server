@@ -7,3 +7,11 @@ class EventModel:
         self.eventid = id
         self.image_url = image_url
         self.position = position
+
+
+class UserModel:
+    def __init__(self, full_name, email=None, phone_number=None, id=-1):
+        self.full_name = full_name
+        self.email = email
+        self.phone_number = phone_number
+        self.userid = id

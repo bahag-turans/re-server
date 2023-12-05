@@ -2,7 +2,7 @@ import json
 import os
 from flask import current_app, g
 import requests
-from models import EventModel
+from models import EventModel, UserModel
 from google.cloud import storage
 from io import BytesIO
 import uuid
@@ -48,6 +48,35 @@ class Repository:
             ps_cursor.close()
         print("EVENT LIST: ", event_list)
         return event_list
+    
+    def events_get_by_page(self, pageNumber):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "select title, event_description, loc, dat, eventid, image_url, position from event order by title")
+            page_size = 4
+            page_number = pageNumber
+            ps_cursor.scroll((page_number - 1) * page_size)
+            paginated_data = ps_cursor.fetchmany(page_size)
+            event_list = []
+            ps_cursor.execute("SELECT COUNT(*) FROM event")
+            # Fetch the total number of records
+            total_records = ps_cursor.fetchone()[0]
+
+            total_pages = (total_records + page_size - 1) // page_size
+
+            for row in paginated_data:
+                event_list.append(EventModel(
+                    row[0], row[1], row[2], str(row[3]), row[4], row[5], row[6]).__dict__)
+            ps_cursor.close()
+        print("paginated data", event_list)
+        response = {
+            "data": event_list,
+            "total_pages": total_pages,
+            "current_page": pageNumber
+        }
+        return response
 
     def event_get_by_id(self, id):
         conn = self.get_db()
@@ -71,7 +100,7 @@ class Repository:
                 image_url = upload_image_to_storage(data['image_url'])
                 data['image_url'] = image_url
             else:
-                data['image_url'] = "https://storage.googleapis.com/hub-roitraining01-poc-images/event-images/9a41a39a-92f9-4687-8e73-378630d78cb7.png"
+                data['image_url'] = "https://storage.googleapis.com/hub-roitraining01-poc-images/event-images/no-image.jpeg"
 
             if data['loc']:
                 lat_lng = self.geocode_location(data['loc'])
@@ -79,7 +108,8 @@ class Repository:
                 data['position'] = json_data
             ps_cursor.execute(
                 "Insert into event (title, event_description, loc, dat, image_url, position) values(%s, %s, %s, %s, %s, %s) returning eventid",
-                (data['title'], data['event_description'], data['loc'], data['dat'], data['image_url'], data['position']))
+                (data['title'], data['event_description'], data['loc'], data['dat'], data['image_url'],
+                 data['position']))
             conn.commit()
             id = ps_cursor.fetchone()[0]
             ps_cursor.close()
@@ -123,3 +153,55 @@ class Repository:
         if (data['results']):
             lat_lng = data['results'][0]['geometry']['location']
         return lat_lng
+
+    def user_get_by_id(self, id):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "select full_name, email, phone_number from users where userid = %s",
+                (id,))
+            user_record = ps_cursor.fetchone()
+            if user_record is None:
+                return None
+            user_model = UserModel(user_record[0], user_record[1], user_record[2], id)
+            ps_cursor.close()
+        return user_model
+
+    def user_get_by_email(self, email):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "select full_name, email, phone_number, userid from users where email = %s",
+                (email,))
+            user_record = ps_cursor.fetchone()
+            if user_record is None:
+                return None
+            user_model = UserModel(user_record[0], user_record[1], user_record[2], user_record[3])
+            ps_cursor.close()
+        return user_model
+
+    def user_add(self, data):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "Insert into users (full_name, email, phone_number) values(%s, %s, %s) returning userid",
+                (data['full_name'], data['email'], data['phone_number']))
+            conn.commit()
+            id = ps_cursor.fetchone()[0]
+            ps_cursor.close()
+            user = UserModel(data['full_name'], data['email'], data['phone_number'], id)
+            ps_cursor.close()
+        return user
+
+    def user_delete(self, id):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute("Delete from users where userid = %s", (id,))
+            conn.commit()
+            deleted_rows = ps_cursor.rowcount
+            ps_cursor.close()
+        return deleted_rows
