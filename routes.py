@@ -14,6 +14,8 @@ class EventList(Resource):
 
     def post(self, req=request):
         data = req.get_json()
+        print("DDDAATTATATTATATATTATATATATTAT")
+        print(data)
         return self.repo.event_add(data).__dict__
 
 
@@ -23,7 +25,27 @@ class PaginatedEventList(Resource):
 
     def get(self, page_number=1):
         return self.repo.events_get_by_page(int(page_number))
+    
+class UsersFavoriteEvents(Resource):
+    def __init__(self, repo=repository):
+        self.repo = repo
 
+    def post(self, req=request):
+        data = req.get_json()
+        print("DDDAATTATATTATATATTATATATATTAT")
+        print(data)
+        return self.repo.user_favorite_events_add(data).__dict__
+    def delete(self, req=request):
+        data = req.get_json()
+        return self.repo.user_favorite_events_delete(data)
+    
+
+class UserFavoriteEvents(Resource):
+    def __init__(self, repo=repository):
+        self.repo = repo
+
+    def get(self, user_id):
+        return self.repo.user_favorite_events_get_by_user_id(int(user_id))
 
 class Event(Resource):
     def __init__(self, repo=repository):

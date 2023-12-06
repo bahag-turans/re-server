@@ -2,7 +2,7 @@ import json
 import os
 from flask import current_app, g
 import requests
-from models import EventModel, UserModel, CommentModel
+from models import EventModel, UserModel, UserFavoriteEventsModel, CommentModel
 from google.cloud import storage
 from io import BytesIO
 import uuid
@@ -55,7 +55,7 @@ class Repository:
             ps_cursor = conn.cursor()
             ps_cursor.execute(
                 "select title, event_description, loc, dat, eventid, image_url, position from event order by title")
-            page_size = 4
+            page_size = 8
             page_number = pageNumber
             ps_cursor.scroll((page_number - 1) * page_size)
             paginated_data = ps_cursor.fetchmany(page_size)
@@ -205,6 +205,47 @@ class Repository:
             deleted_rows = ps_cursor.rowcount
             ps_cursor.close()
         return deleted_rows
+    
+    def user_favorite_events_add(self, data):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "Insert into userfavoriteevents (user_id, event_id) values(%s, %s) returning user_id, event_id",
+                (data['user_id'], data['event_id']))
+            conn.commit()
+            user_id, event_id = ps_cursor.fetchone()
+            ps_cursor.close()
+            user_favorite_event = UserFavoriteEventsModel(user_id, event_id)
+            ps_cursor.close()
+
+        return user_favorite_event
+    
+    def user_favorite_events_delete(self, data):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "Delete from userfavoriteevents where user_id = %s and event_id = %s", (data['user_id'], data['event_id']))
+            conn.commit()
+            deleted_rows = ps_cursor.rowcount
+            ps_cursor.close()
+        return deleted_rows
+    
+    def user_favorite_events_get_by_user_id(self, user_id):
+        conn = self.get_db()
+        if conn:
+            ps_cursor = conn.cursor()
+            ps_cursor.execute(
+                "select user_id, event_id from userfavoriteevents where user_id = %s",
+                (user_id,))
+            user_favorite_events_records = ps_cursor.fetchall()
+            user_favorite_events_list = []
+            for row in user_favorite_events_records:
+                user_favorite_events_list.append(UserFavoriteEventsModel(
+                    row[0], row[1]).__dict__)
+            ps_cursor.close()
+        return user_favorite_events_list
 
     def comment_add(self, data):
         conn = self.get_db()
