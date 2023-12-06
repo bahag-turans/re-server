@@ -10,8 +10,13 @@ class EventModel:
 
 
 class UserModel:
-    def __init__(self, full_name, email=None, phone_number=None, id=-1):
+    def __init__(self, full_name, email=None, phone_number=None, id=-1, favorite_events=None):
         self.full_name = full_name
         self.email = email
         self.phone_number = phone_number
         self.userid = id
+
+class UserFavoriteEventsModel:
+    def __init__(self, user_id, event_id):
+        self.user_id = user_id
+        self.event_id = event_id
