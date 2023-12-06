@@ -16,6 +16,9 @@ class UserModel:
         self.phone_number = phone_number
         self.userid = id
 
+class ValidationErrorModel:
+    def __init__(self, error_message):
+        self.error=error_message
 
 class CommentModel:
     def __init__(self, author_name, comment, date, authorid, eventid, commentid=-1):
@@ -25,3 +28,5 @@ class CommentModel:
         self.authorid = authorid
         self.eventid = eventid
         self.commentid = commentid
+
+

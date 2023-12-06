@@ -1,13 +1,14 @@
 import json
 import os
-from flask import current_app, g
+from flask import current_app, g ,jsonify
 import requests
-from models import EventModel, UserModel, CommentModel
+from models import EventModel, UserModel, CommentModel, ValidationErrorModel
 from google.cloud import storage
 from io import BytesIO
 import uuid
 import base64
 import psycopg2
+import re
 
 
 def upload_image_to_storage(base64_image):
@@ -93,6 +94,23 @@ class Repository:
         return event_model
 
     def event_add(self, data):
+
+        for field in ['title', 'event_description', 'loc', 'dat']:
+            if field not in data or not data[field]:
+                return ValidationErrorModel(f'{field} is required.')    
+             
+        if not 5 <= len(data['title']) <= 100 or not re.fullmatch(r'^[A-Za-z0-9\s]+$', data['title']):
+            return ValidationErrorModel('Title must be 5-100 characters long and contain only alphanumeric characters and spaces.')
+        
+        if len(data['event_description']) < 10:
+            return ValidationErrorModel('Event description must be at least 10 characters long.')
+        
+        if not re.fullmatch(r'^[A-Za-z0-9\s,]+$', data['loc']):
+           return ValidationErrorModel('Location must only contain alphanumeric characters, spaces, and commas.')
+
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', data['dat']):
+            return ValidationErrorModel('Invalid date format. Expected YYYY-MM-DD.')
+        
         conn = self.get_db()
         if conn:
             ps_cursor = conn.cursor()
@@ -186,6 +204,30 @@ class Repository:
         conn = self.get_db()
         if conn:
             ps_cursor = conn.cursor()
+            
+            # Validate 'full_name': ensure it exists, is not blank, has at least 2 characters, and matches name_regex (ps:Ad)
+            name_regex = r'^[A-Za-z\s]+$'
+            if ('full_name' not in data or 
+            not data['full_name'].strip() or 
+            len(data['full_name']) < 2 or 
+            not re.fullmatch(name_regex, data['full_name'])):
+                return ValidationErrorModel('Invalid name')
+
+            # Check if 'email' key exists in data, is not empty, and matches the email_regex pattern (ps:as@gmail.com)
+            email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+            if ('email' not in data or 
+            not data['email'] or 
+            not re.fullmatch(email_regex, data['email'])):
+                return ValidationErrorModel('Invalid email')
+
+            # Check if 'phone_number' key exists in data, is not empty, and matches the phone_regex pattern(ps:1234567890)
+            phone_regex = r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b'
+            if ('phone_number' not in data or 
+            not data['phone_number'] or 
+            not re.fullmatch(phone_regex, data['phone_number'])):
+                return ValidationErrorModel('Invalid phone number')
+
+            
             ps_cursor.execute(
                 "Insert into users (full_name, email, phone_number) values(%s, %s, %s) returning userid",
                 (data['full_name'], data['email'], data['phone_number']))
@@ -195,7 +237,7 @@ class Repository:
             user = UserModel(data['full_name'], data['email'], data['phone_number'], id)
             ps_cursor.close()
         return user
-
+    
     def user_delete(self, id):
         conn = self.get_db()
         if conn:
