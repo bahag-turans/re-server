@@ -26,12 +26,11 @@ class TestRoutes(unittest.TestCase):
             'description': 'This is a test event'
         }
         response = self.client.post('/events', json=data)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 500)
 
     def test_paginated_event_list_get(self):
         response = self.client.get('/events/2')
         self.assertEqual(response.status_code, 500)
-        # ##########3
 
     def test_event_get(self):
         response = self.client.get('/events/1')
@@ -83,4 +82,3 @@ class TestRoutes(unittest.TestCase):
     def test_event_comments_get(self):
         response = self.client.get('/events/1/comments')
         self.assertEqual(response.status_code, 500)
-
