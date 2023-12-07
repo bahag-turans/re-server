@@ -26,7 +26,25 @@ def upload_image_to_storage(base64_image):
     image_url = blob.public_url
 
     return image_url
+def translate_text(text, target_language='de', source_language='auto'):
+        libretranslate_url = 'https://libretranslate.com/translate'
+        headers = {'Content-Type': 'application/json'}
 
+        data = {
+            'q': text,
+            'source': source_language,
+            'target': target_language,
+            'format': 'text',
+        }
+
+        response = requests.post(libretranslate_url, json=data, headers=headers)
+
+        if response.status_code == 200:
+            translation = response.json().get('translatedText')
+            return translation
+        else:
+            print(f"Translation request failed with status code {response.status_code}")
+            return None  
 
 class Repository:
     def get_db(self):
@@ -78,18 +96,31 @@ class Repository:
         }
         return response
 
-    def event_get_by_id(self, id):
+    def event_get_by_id(self, id, target_language='de', source_language='auto'):
         conn = self.get_db()
         if conn:
-            print(conn)
             ps_cursor = conn.cursor()
             ps_cursor.execute(
                 "select title, event_description, loc, dat, eventid, image_url, position from event where eventid = %s order by title",
                 (id,))
             event_record = ps_cursor.fetchone()
-            event_model = EventModel(event_record[0], event_record[1], event_record[2], str(event_record[3]),
-                                     event_record[4], event_record[5], event_record[6])
+            if event_record is None:
+                return None
+
+            title = event_record[0]
+            description = event_record[1]
+            location = event_record[2]
+
+            translated_title = translate_text(title, target_language, source_language)
+            translated_description = translate_text(description, target_language, source_language)
+            translated_location = translate_text(location, target_language, source_language)
+
+            event_model = EventModel(
+                translated_title, translated_description, translated_location , str(event_record[3]),
+                event_record[4], event_record[5], event_record[6])
+
             ps_cursor.close()
+
         return event_model
 
     def event_add(self, data):
@@ -281,7 +312,7 @@ class Repository:
             print("Comment list for eventid: ", eventid, " is: ", comment_list)
         return comment_list
 
-    def comment_get_by_id(self, commentid):
+    def comment_get_by_id(self, commentid, target_language='de', source_language='auto'):
         conn = self.get_db()
         if conn:
             ps_cursor = conn.cursor()
@@ -291,9 +322,17 @@ class Repository:
             comment_record = ps_cursor.fetchone()
             if comment_record is None:
                 return None
-            comment_model = CommentModel(comment_record[0], comment_record[1], str(comment_record[2]), comment_record[3],
-                                         comment_record[4], commentid)
+
+            comment_text = comment_record[1]
+
+            translated_comment_text = translate_text(comment_text, target_language, source_language)
+
+            comment_model = CommentModel(
+                comment_record[0], translated_comment_text, str(comment_record[2]),
+                comment_record[3], comment_record[4], commentid)
+
             ps_cursor.close()
+
         return comment_model
 
     def comment_delete(self, commentid):
@@ -305,3 +344,4 @@ class Repository:
             deleted_rows = ps_cursor.rowcount
             ps_cursor.close()
         return deleted_rows
+   
