@@ -13,6 +13,11 @@ class UserModel:
         self.email = email
         self.phone_number = phone_number
         self.userid = id
+
+class ValidationErrorModel:
+    def __init__(self, error_message):
+        self.error=error_message
+
 class CommentModel:
     def __init__(self, author_name, comment, date, authorid, eventid, commentid=-1):
         self.author_name = author_name

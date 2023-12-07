@@ -1,13 +1,14 @@
 import json
 import os
-from flask import current_app, g
+from flask import current_app, g ,jsonify
 import requests
-from models import EventModel, UserModel, UserFavoriteEventsModel, CommentModel
+from models import EventModel, UserModel, UserFavoriteEventsModel, CommentModel, ValidationErrorModel
 from google.cloud import storage
 from io import BytesIO
 import uuid
 import base64
 import psycopg2
+import re
 
 from pubsub import PubSub
 
@@ -98,6 +99,23 @@ class Repository:
         return event_model
 
     def event_add(self, data):
+
+        for field in ['title', 'event_description', 'loc', 'dat']:
+            if field not in data or not data[field]:
+                return ValidationErrorModel(f'{field} is required.')    
+             
+        if not 5 <= len(data['title']) <= 100 or not re.fullmatch(r'^[A-Za-z0-9\s]+$', data['title']):
+            return ValidationErrorModel('Title must be 5-100 characters long and contain only alphanumeric characters and spaces.')
+        
+        if len(data['event_description']) < 10:
+            return ValidationErrorModel('Event description must be at least 10 characters long.')
+        
+        if not re.fullmatch(r'^[A-Za-z0-9\s,]+$', data['loc']):
+           return ValidationErrorModel('Location must only contain alphanumeric characters, spaces, and commas.')
+
+        if not re.fullmatch(r'\d{4}-\d{2}-\d{2}', data['dat']):
+            return ValidationErrorModel('Invalid date format. Expected YYYY-MM-DD.')
+        
         conn = self.get_db()
         if conn:
             ps_cursor = conn.cursor()
@@ -192,6 +210,36 @@ class Repository:
         conn = self.get_db()
         if conn:
             ps_cursor = conn.cursor()
+            
+            name_regex = r'^[A-Za-z\s]+$'
+            if ('full_name' not in data or 
+            not data['full_name'].strip() or 
+            len(data['full_name']) < 2 or 
+            not re.fullmatch(name_regex, data['full_name'])):
+                return ValidationErrorModel('Invalid name')
+
+            email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+            if ('email' not in data or 
+            not data['email'] or 
+            not re.fullmatch(email_regex, data['email'])):
+                return ValidationErrorModel('Invalid email')
+
+            phone_regex = r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b'
+            if ('phone_number' not in data or 
+            not data['phone_number'] or 
+            not re.fullmatch(phone_regex, data['phone_number'])):
+                return ValidationErrorModel('Invalid phone number')
+            
+            ps_cursor.execute("SELECT * FROM users WHERE email = %s", (data['email'],))
+            existing_user = ps_cursor.fetchone()
+            if existing_user:
+                 return ValidationErrorModel('A user with this email already exists.')
+                        
+            ps_cursor.execute("SELECT * FROM users WHERE phone_number = %s", (data['phone_number'],))
+            existing_user = ps_cursor.fetchone()
+            if existing_user:
+                return ValidationErrorModel('A user with this phone number already exists.')
+            
             ps_cursor.execute(
                 "Insert into users (full_name, email, phone_number) values(%s, %s, %s) returning userid",
                 (data['full_name'], data['email'], data['phone_number']))
@@ -201,7 +249,7 @@ class Repository:
             user = UserModel(data['full_name'], data['email'], data['phone_number'], id)
             ps_cursor.close()
         return user
-
+    
     def user_delete(self, id):
         conn = self.get_db()
         if conn:
@@ -254,6 +302,11 @@ class Repository:
         return user_favorite_events_list
 
     def comment_add(self, data):
+             
+        required_fields = ['author_name', 'comment', 'dat', 'authorid', 'eventid']
+        for field in required_fields:
+            if not data.get(field):
+                return ValidationErrorModel(f'{field} is required.')           
         conn = self.get_db()
         if conn:
             ps_cursor = conn.cursor()
