@@ -205,7 +205,6 @@ class Repository:
         if conn:
             ps_cursor = conn.cursor()
             
-            # Validate 'full_name': ensure it exists, is not blank, has at least 2 characters, and matches name_regex (ps:Ad)
             name_regex = r'^[A-Za-z\s]+$'
             if ('full_name' not in data or 
             not data['full_name'].strip() or 
@@ -213,20 +212,27 @@ class Repository:
             not re.fullmatch(name_regex, data['full_name'])):
                 return ValidationErrorModel('Invalid name')
 
-            # Check if 'email' key exists in data, is not empty, and matches the email_regex pattern (ps:as@gmail.com)
             email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
             if ('email' not in data or 
             not data['email'] or 
             not re.fullmatch(email_regex, data['email'])):
                 return ValidationErrorModel('Invalid email')
 
-            # Check if 'phone_number' key exists in data, is not empty, and matches the phone_regex pattern(ps:1234567890)
             phone_regex = r'\b\d{3}[-.]?\d{3}[-.]?\d{4}\b'
             if ('phone_number' not in data or 
             not data['phone_number'] or 
             not re.fullmatch(phone_regex, data['phone_number'])):
                 return ValidationErrorModel('Invalid phone number')
-
+            
+            ps_cursor.execute("SELECT * FROM users WHERE email = %s", (data['email'],))
+            existing_user = ps_cursor.fetchone()
+            if existing_user:
+                 return ValidationErrorModel('A user with this email already exists.')
+                        
+            ps_cursor.execute("SELECT * FROM users WHERE phone_number = %s", (data['phone_number'],))
+            existing_user = ps_cursor.fetchone()
+            if existing_user:
+                return ValidationErrorModel('A user with this phone number already exists.')
             
             ps_cursor.execute(
                 "Insert into users (full_name, email, phone_number) values(%s, %s, %s) returning userid",
@@ -249,6 +255,11 @@ class Repository:
         return deleted_rows
 
     def comment_add(self, data):
+             
+        required_fields = ['author_name', 'comment', 'dat', 'authorid', 'eventid']
+        for field in required_fields:
+            if not data.get(field):
+                return ValidationErrorModel(f'{field} is required.')           
         conn = self.get_db()
         if conn:
             ps_cursor = conn.cursor()
