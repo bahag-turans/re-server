@@ -26,21 +26,22 @@ def upload_image_to_storage(base64_image):
     image_url = blob.public_url
 
     return image_url
-def translate_text(text, target_language='de', source_language='auto'):
-        libretranslate_url = 'https://libretranslate.com/translate'
-        headers = {'Content-Type': 'application/json'}
-
+def translate_text(text, target_lang="DE"):
+        deepL_url = 'https://api-free.deepl.com/v2/translate'
+        headers = {"Authorization": f"DeepL-Auth-Key {os.environ.get('DEEPL_API_KEY')}"}
+        print("text: ", text)
         data = {
-            'q': text,
-            'source': source_language,
-            'target': target_language,
-            'format': 'text',
+            "text": [text],
+            "target_lang": target_lang
         }
 
-        response = requests.post(libretranslate_url, json=data, headers=headers)
+
+        response = requests.post(deepL_url, json=data, headers=headers)
+
+        print("Response: ", response.__dict__)
 
         if response.status_code == 200:
-            translation = response.json().get('translatedText')
+            translation = response.json().get('translations')[0].get("text")
             return translation
         else:
             print(f"Translation request failed with status code {response.status_code}")
@@ -96,7 +97,7 @@ class Repository:
         }
         return response
 
-    def event_get_by_id(self, id, target_language='de', source_language='auto'):
+    def event_get_by_id(self, id):
         conn = self.get_db()
         if conn:
             ps_cursor = conn.cursor()
@@ -111,9 +112,13 @@ class Repository:
             description = event_record[1]
             location = event_record[2]
 
-            translated_title = translate_text(title, target_language, source_language)
-            translated_description = translate_text(description, target_language, source_language)
-            translated_location = translate_text(location, target_language, source_language)
+            translated_title = translate_text(title)
+            translated_description = translate_text(description)
+            translated_location = translate_text(location)
+
+            print("Translated title: ", translated_title)
+            print("Translated description: ", translated_description)
+            print("Translated location: ", translated_location)
 
             event_model = EventModel(
                 translated_title, translated_description, translated_location , str(event_record[3]),
@@ -305,14 +310,17 @@ class Repository:
             if comment_records is None:
                 return None
             for comment_record in comment_records:
+                comment_text = comment_record[1]
+
+                translated_comment_text = translate_text(comment_text)
                 comment_list.append(
-                    CommentModel(comment_record[0], comment_record[1], str(comment_record[2]), comment_record[3],
+                    CommentModel(comment_record[0], translated_comment_text, str(comment_record[2]), comment_record[3],
                                  eventid, comment_record[5]))
             ps_cursor.close()
             print("Comment list for eventid: ", eventid, " is: ", comment_list)
         return comment_list
 
-    def comment_get_by_id(self, commentid, target_language='de', source_language='auto'):
+    def comment_get_by_id(self, commentid):
         conn = self.get_db()
         if conn:
             ps_cursor = conn.cursor()
@@ -323,12 +331,8 @@ class Repository:
             if comment_record is None:
                 return None
 
-            comment_text = comment_record[1]
-
-            translated_comment_text = translate_text(comment_text, target_language, source_language)
-
             comment_model = CommentModel(
-                comment_record[0], translated_comment_text, str(comment_record[2]),
+                comment_record[0], comment_record[1], str(comment_record[2]),
                 comment_record[3], comment_record[4], commentid)
 
             ps_cursor.close()
