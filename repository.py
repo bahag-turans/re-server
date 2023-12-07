@@ -9,6 +9,8 @@ import uuid
 import base64
 import psycopg2
 
+from pubsub import PubSub
+
 
 def upload_image_to_storage(base64_image):
     storage_client = storage.Client()
@@ -27,6 +29,10 @@ def upload_image_to_storage(base64_image):
 
     return image_url
 
+
+def participate_event(userid, eventid):
+    pubsub = PubSub()
+    pubsub.participate_event(userid, eventid)
 
 class Repository:
     def get_db(self):
@@ -48,7 +54,7 @@ class Repository:
             ps_cursor.close()
         print("EVENT LIST: ", event_list)
         return event_list
-    
+
     def events_get_by_page(self, pageNumber):
         conn = self.get_db()
         if conn:
@@ -100,7 +106,8 @@ class Repository:
                 image_url = upload_image_to_storage(data['image_url'])
                 data['image_url'] = image_url
             else:
-                data['image_url'] = "https://storage.googleapis.com/hub-roitraining01-poc-images/event-images/no-image.jpeg"
+                data[
+                    'image_url'] = "https://storage.googleapis.com/hub-roitraining01-poc-images/event-images/no-image.jpeg"
 
             if data['loc']:
                 lat_lng = self.geocode_location(data['loc'])
@@ -291,7 +298,8 @@ class Repository:
             comment_record = ps_cursor.fetchone()
             if comment_record is None:
                 return None
-            comment_model = CommentModel(comment_record[0], comment_record[1], str(comment_record[2]), comment_record[3],
+            comment_model = CommentModel(comment_record[0], comment_record[1], str(comment_record[2]),
+                                         comment_record[3],
                                          comment_record[4], commentid)
             ps_cursor.close()
         return comment_model

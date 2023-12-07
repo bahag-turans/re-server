@@ -1,5 +1,5 @@
 from flask_restful import Resource
-from repository import Repository
+from repository import Repository, participate_event
 from flask import request
 
 repository = Repository()
@@ -60,6 +60,13 @@ class Event(Resource):
     def put(self, event_id, req=request):
         data = req.get_json()
         return self.repo.event_update(data).__dict__
+
+    # This function now only does participate event but I planned to add persisting to DB logic
+    # after I see Pub/Sub working
+    def post(self, event_id, req=request):
+        userid = req.args.get('userid')
+        participate_event(userid, event_id)
+        return {"message": f"Event participation message acknowledged for user {userid} and event {event_id}"}
 
 
 class Users(Resource):
