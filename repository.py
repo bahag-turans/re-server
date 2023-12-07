@@ -55,19 +55,18 @@ class Repository:
         print("EVENT LIST: ", event_list)
         return event_list
 
-    def events_get_by_page(self, pageNumber):
+    def events_get_by_page(self, pageNumber, search_term):
         conn = self.get_db()
         if conn:
             ps_cursor = conn.cursor()
-            ps_cursor.execute(
-                "select title, event_description, loc, dat, eventid, image_url, position from event order by title")
+            sql_query = f"SELECT title, event_description, loc, dat, eventid, image_url, position FROM event WHERE title ILIKE %s ORDER BY title"
+            ps_cursor.execute(sql_query, ('%' + search_term + '%',))
             page_size = 8
             page_number = pageNumber
             ps_cursor.scroll((page_number - 1) * page_size)
             paginated_data = ps_cursor.fetchmany(page_size)
             event_list = []
-            ps_cursor.execute("SELECT COUNT(*) FROM event")
-            # Fetch the total number of records
+            ps_cursor.execute("SELECT COUNT(*) FROM event WHERE title ILIKE %s", ('%' + search_term + '%',))
             total_records = ps_cursor.fetchone()[0]
 
             total_pages = (total_records + page_size - 1) // page_size

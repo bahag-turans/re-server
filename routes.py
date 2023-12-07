@@ -23,8 +23,9 @@ class PaginatedEventList(Resource):
     def __init__(self, repo=repository):
         self.repo = repo
 
-    def get(self, page_number=1):
-        return self.repo.events_get_by_page(int(page_number))
+    def get(self, req=request, page_number=1):
+        search_term = req.args.get('search', default='', type=str)
+        return self.repo.events_get_by_page(int(page_number), search_term)
     
 class UsersFavoriteEvents(Resource):
     def __init__(self, repo=repository):
