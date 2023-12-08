@@ -110,6 +110,7 @@ class Repository:
 
     def event_get_by_id(self, id):
         conn = self.get_db()
+        print(os.environ.get("DEEPL_API_KEY"))
         if conn:
             ps_cursor = conn.cursor()
             ps_cursor.execute(
@@ -123,9 +124,9 @@ class Repository:
             description = event_record[1]
             location = event_record[2]
 
-            translated_title = translate_text(title)
-            translated_description = translate_text(description)
-            translated_location = translate_text(location)
+            translated_title = translate_text(title) if translate_text(title) else title
+            translated_description = translate_text(description) if translate_text(description) else description
+            translated_location = translate_text(location) if translate_text(location) else location
 
             print("Translated title: ", translated_title)
             print("Translated description: ", translated_description)
