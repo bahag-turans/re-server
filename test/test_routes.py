@@ -22,8 +22,12 @@ class TestRoutes(unittest.TestCase):
 
     def test_event_list_post(self):
         data = {
-            'name': 'Test Event',
-            'description': 'This is a test event'
+                'title': 'New Event',
+                'event_description': 'upcoming event',
+                'loc': 'Mannheim',
+                'dat': '2025-03-09',
+                'image_url': '',
+                'position': {"lat": 0, "lng": 0}
         }
         response = self.client.post('/events', json=data)
         self.assertEqual(response.status_code, 500)

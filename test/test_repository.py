@@ -57,9 +57,9 @@ class TestRepository:
         with app.app_context():
             event_data = {
                 'title': 'New Event',
-                'event_description': 'upcoming',
+                'event_description': 'upcoming event',
                 'loc': 'Mannheim',
-                'dat': datetime(2023, 12, 29, 11, 00, 00),
+                'dat': '2025-03-09',
                 'image_url': '',
                 'position': {"lat": 0, "lng": 0}
             }
