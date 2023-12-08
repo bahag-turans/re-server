@@ -29,7 +29,30 @@ def upload_image_to_storage(base64_image):
     image_url = blob.public_url
 
     return image_url
+def translate_text(text, target_lang="DE"):
+        deepL_url = 'https://api-free.deepl.com/v2/translate'
+        headers = {"Authorization": f"DeepL-Auth-Key {os.environ.get('DEEPL_API_KEY')}"}
+        print("text: ", text)
+        data = {
+            "text": [text],
+            "target_lang": target_lang
+        }
 
+
+        response = requests.post(deepL_url, json=data, headers=headers)
+
+        print("Response: ", response.__dict__)
+
+        if response.status_code == 200:
+            translation = response.json().get('translations')[0].get("text")
+            return translation
+        else:
+            print(f"Translation request failed with status code {response.status_code}")
+            return None  
+
+def participate_event(userid, eventid):
+    pubsub = PubSub()
+    pubsub.participate_event(userid, eventid)
 
 def participate_event(userid, eventid):
     pubsub = PubSub()
@@ -88,15 +111,32 @@ class Repository:
     def event_get_by_id(self, id):
         conn = self.get_db()
         if conn:
-            print(conn)
             ps_cursor = conn.cursor()
             ps_cursor.execute(
                 "select title, event_description, loc, dat, eventid, image_url, position from event where eventid = %s order by title",
                 (id,))
             event_record = ps_cursor.fetchone()
-            event_model = EventModel(event_record[0], event_record[1], event_record[2], str(event_record[3]),
-                                     event_record[4], event_record[5], event_record[6])
+            if event_record is None:
+                return None
+
+            title = event_record[0]
+            description = event_record[1]
+            location = event_record[2]
+
+            translated_title = translate_text(title)
+            translated_description = translate_text(description)
+            translated_location = translate_text(location)
+
+            print("Translated title: ", translated_title)
+            print("Translated description: ", translated_description)
+            print("Translated location: ", translated_location)
+
+            event_model = EventModel(
+                translated_title, translated_description, translated_location , str(event_record[3]),
+                event_record[4], event_record[5], event_record[6])
+
             ps_cursor.close()
+
         return event_model
 
     def event_add(self, data):
@@ -334,8 +374,11 @@ class Repository:
             if comment_records is None:
                 return None
             for comment_record in comment_records:
+                comment_text = comment_record[1]
+
+                translated_comment_text = translate_text(comment_text)
                 comment_list.append(
-                    CommentModel(comment_record[0], comment_record[1], str(comment_record[2]), comment_record[3],
+                    CommentModel(comment_record[0], translated_comment_text, str(comment_record[2]), comment_record[3],
                                  eventid, comment_record[5]))
             ps_cursor.close()
             print("Comment list for eventid: ", eventid, " is: ", comment_list)
@@ -351,10 +394,14 @@ class Repository:
             comment_record = ps_cursor.fetchone()
             if comment_record is None:
                 return None
-            comment_model = CommentModel(comment_record[0], comment_record[1], str(comment_record[2]),
-                                         comment_record[3],
-                                         comment_record[4], commentid)
+
+            comment_model = CommentModel(
+                comment_record[0], comment_record[1], str(comment_record[2]),
+                comment_record[3], comment_record[4], commentid)
+
+
             ps_cursor.close()
+
         return comment_model
 
     def comment_delete(self, commentid):
@@ -366,3 +413,4 @@ class Repository:
             deleted_rows = ps_cursor.rowcount
             ps_cursor.close()
         return deleted_rows
+   
