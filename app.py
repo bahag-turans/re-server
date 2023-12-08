@@ -1,7 +1,10 @@
 import os
-from flask import Flask, g
+from flask import Flask, g, request
 from flask_restful import Api
-from routes import EventList, Event, Users, PaginatedEventList, UsersFavoriteEvents, UserFavoriteEvents, Comment, EventComments
+
+from repository import translate_text
+from routes import EventList, Event, Users, PaginatedEventList, UsersFavoriteEvents, UserFavoriteEvents, Comment, \
+    EventComments
 from flask_cors import CORS
 from psycopg2 import pool
 
@@ -40,6 +43,25 @@ api.add_resource(UserFavoriteEvents, f'{BASE_URL}/user/<user_id>/favorite-events
 @app.route('/')
 def hello_world():
     return 'Hello, Flask World!'
+
+
+@app.route('/api/translate', methods=['POST'])
+def translate():
+    data = request.get_json()
+    title = data.get('title', '')
+    description = data.get('event_description', '')
+    location = data.get('loc', '')
+    target_lang = request.args.get('target_lang', 'DE')
+
+    translated_title = translate_text(title, target_lang)
+    translated_description = translate_text(description, target_lang)
+    translated_location = translate_text(location, target_lang)
+
+    data['title'] = translated_title
+    data['event_description'] = translated_description
+    data['loc'] = translated_location
+
+    return data
 
 
 @app.teardown_appcontext
