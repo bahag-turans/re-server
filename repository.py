@@ -38,7 +38,8 @@ def translate_text(text, target_lang="DE"):
             "target_lang": target_lang
         }
 
-
+        print("Url: ", deepL_url)
+        print("Data: ", data)
         response = requests.post(deepL_url, json=data, headers=headers)
 
         print("Response: ", response.__dict__)
