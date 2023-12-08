@@ -48,11 +48,7 @@ def translate_text(text, target_lang="DE"):
             return translation
         else:
             print(f"Translation request failed with status code {response.status_code}")
-            return None  
-
-def participate_event(userid, eventid):
-    pubsub = PubSub()
-    pubsub.participate_event(userid, eventid)
+            return None
 
 def participate_event(userid, eventid):
     pubsub = PubSub()
@@ -124,16 +120,17 @@ class Repository:
             description = event_record[1]
             location = event_record[2]
 
-            translated_title = translate_text(title) if translate_text(title) else title
-            translated_description = translate_text(description) if translate_text(description) else description
-            translated_location = translate_text(location) if translate_text(location) else location
 
-            print("Translated title: ", translated_title)
-            print("Translated description: ", translated_description)
-            print("Translated location: ", translated_location)
+            #translated_title = translate_text(title) if translate_text(title) else title
+            #translated_description = translate_text(description) if translate_text(description) else description
+            #translated_location = translate_text(location) if translate_text(location) else location
+
+            #print("Translated title: ", translated_title)
+            #print("Translated description: ", translated_description)
+            #print("Translated location: ", translated_location)
 
             event_model = EventModel(
-                translated_title, translated_description, translated_location , str(event_record[3]),
+                title, description, location , str(event_record[3]),
                 event_record[4], event_record[5], event_record[6])
 
             ps_cursor.close()
@@ -377,9 +374,9 @@ class Repository:
             for comment_record in comment_records:
                 comment_text = comment_record[1]
 
-                translated_comment_text = translate_text(comment_text)
+                #translated_comment_text = translate_text(comment_text)
                 comment_list.append(
-                    CommentModel(comment_record[0], translated_comment_text, str(comment_record[2]), comment_record[3],
+                    CommentModel(comment_record[0], comment_text, str(comment_record[2]), comment_record[3],
                                  eventid, comment_record[5]))
             ps_cursor.close()
             print("Comment list for eventid: ", eventid, " is: ", comment_list)
